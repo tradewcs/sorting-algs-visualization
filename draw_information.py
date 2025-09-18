@@ -1,4 +1,3 @@
-
 import pygame
 import random
 import math
@@ -26,7 +25,7 @@ class DrawInformation:
         self.height = height
         self.clock_tick = clock_tick
         self.window = pygame.display.set_mode((width, height))
-        pygame.display.set_caption("I LOVE PASTULA <3")
+        pygame.display.set_caption("Sorting algorithms visualization")
         self.set_list(lst)
 
     def set_list(self, lst):
@@ -34,12 +33,14 @@ class DrawInformation:
         self.min_val = min(lst)
         self.max_val = max(lst)
         self.block_width = round((self.width - self.SIDE_PAD) / len(lst))
-        self.block_height = math.floor((self.height - self.TOP_PAD) / (self.max_val - self.min_val))
+
+        value_range = max(1, self.max_val - self.min_val)
+        self.block_height = math.floor((self.height - self.TOP_PAD) / value_range)
         self.start_x = self.SIDE_PAD // 2
 
     def get_gradient(self, val, type):
-        val %= 256
-        val += 1
+        val = abs(val) % 256
+        val = max(val, 1)
         if type == 1:
             return ((val + 50) % 256, 100, (10 // val + 120) % 256)
         if type == 2:
@@ -54,7 +55,7 @@ def check_commands():
             pygame.quit()
             return False
         if event.type != pygame.KEYDOWN:
-            return True
+            continue
         if event.key == pygame.K_ESCAPE or event.key == pygame.K_r:
             return False
     return True

@@ -3,6 +3,7 @@ import math
 import pygame
 from draw_information import *
 
+INSERTION_SORT_THRESHOLD = 16
 
 def insertion_sort(draw_info: DrawInformation, begin=0, end=None):
     lst = draw_info.lst
@@ -21,13 +22,14 @@ def insertion_sort(draw_info: DrawInformation, begin=0, end=None):
 
     if go_through(draw_info, begin, end, color=draw_info.GREEN) is False:
         return False
+    return True
 
 def partition(draw_info: DrawInformation, begin=0, end=None):
     lst = draw_info.lst
     if end is None:
         end = len(lst) - 1
     if begin >= end:
-        return
+        return None
 
     pivot = begin
     for i in range(begin, end):
@@ -35,9 +37,9 @@ def partition(draw_info: DrawInformation, begin=0, end=None):
             lst[i], lst[pivot] = lst[pivot], lst[i]
             pivot += 1
             if draw_list(draw_info, color_positions={i: draw_info.CYAN, pivot: draw_info.GREEN_CYAN}, clear_bg=True) is False:
-                return False
+                return None
         if draw_list(draw_info, color_positions={i: draw_info.CYAN, end: draw_info.BLUE}, clear_bg=True) is False:
-            return False
+            return None
 
     lst[pivot], lst[end] = lst[end], lst[pivot]
     return pivot
@@ -46,21 +48,24 @@ def quick_sort(draw_info: DrawInformation, begin=0, end=None):
     if end is None:
         end = len(draw_info.lst) - 1
     if begin >= end:
-        return
+        return True
 
     pivot = partition(draw_info, begin, end)
     if pivot is None:
         return False
 
-    quick_sort(draw_info, begin, pivot - 1)
-    quick_sort(draw_info, pivot + 1, end)
+    if quick_sort(draw_info, begin, pivot - 1) is False:
+        return False
+    if quick_sort(draw_info, pivot + 1, end) is False:
+        return False
 
     if go_through(draw_info, begin, end, color=(100, 255, 255)) is False:
         return False
+    return True
 
 def heapify(draw_info: DrawInformation, begin, end, i):
     if begin >= end or begin < 0:
-        return
+        return True
 
     logging.debug(f'draw_info: {begin}, {end}, {i}')
     lst = draw_info.lst
@@ -79,11 +84,13 @@ def heapify(draw_info: DrawInformation, begin, end, i):
             return False
         if draw_list(draw_info, color_positions={swap: draw_info.CYAN, i: draw_info.RED}, clear_bg=True) is False:
             return False
+    return True
 
 def make_heap(draw_info, begin, end):
     for i in reversed(range(begin, (end - begin + 1) // 2 + begin)):
         if heapify(draw_info, begin, end, i) is False:
             return False
+    return True
 
 def heap_sort(draw_info, begin=0, end=None):
     lst = draw_info.lst
@@ -95,41 +102,41 @@ def heap_sort(draw_info, begin=0, end=None):
 
     for i in reversed(range(begin, end + 1)):
         lst[i], lst[begin] = lst[begin], lst[i]
-        if heapify(draw_info, begin, i - 1, begin):
+        if heapify(draw_info, begin, i - 1, begin) is False:
             return False
 
     if go_through(draw_info, begin, end, color=(255, 100, 100)) is False:
         return False
-
+    return True
 
 def introsort_rec(draw_info, begin=0, end=None, maxdepth=20):
     if end is None:
         end = len(draw_info.lst) - 1
 
-    if end - begin < 16:
+    if end - begin < INSERTION_SORT_THRESHOLD:
         if insertion_sort(draw_info, begin, end) is False:
             return False
-    elif not maxdepth:
+    elif maxdepth <= 0:
         if heap_sort(draw_info, begin, end) is False:
             return False
     else:
         pivot = partition(draw_info, begin, end)
-        if pivot is False:
+        if pivot is None:
             return False
         if introsort_rec(draw_info, begin, pivot - 1, maxdepth - 1) is False:
-            return
+            return False
         if introsort_rec(draw_info, pivot + 1, end, maxdepth - 1) is False:
-            return
+            return False
 
     if go_through(draw_info, begin, end, color=(80, 0, 255)) is False:
         return False
+    return True
 
 def intro_sort(draw_info, begin=0, end=None):
     if end is None:
         end = len(draw_info.lst) - 1
-
-    maxdepth = int(math.log10(end + 1) * 2)
-    introsort_rec(draw_info, begin, end, maxdepth)
+    maxdepth = int(2 * math.log2(end - begin + 1))
+    return introsort_rec(draw_info, begin, end, maxdepth)
 
 def main():
     clock = pygame.time.Clock()
@@ -143,9 +150,9 @@ def main():
     sorting_algo_name = "Heap Sort"
     draw(draw_info, sorting_algo_name)
     run = True
+    sorting_in_progress = False
     while run:
         for event in pygame.event.get():
-            draw(draw_info, sorting_algo_name)
             if event.type == pygame.QUIT:
                 run = False
                 break
@@ -154,20 +161,30 @@ def main():
             if event.key == pygame.K_r:
                 lst = generate_starting_list(n)
                 draw_info.set_list(lst)
+                sorting_in_progress = False
+                draw(draw_info, sorting_algo_name)
             elif event.key == pygame.K_SPACE:
-                sorting_algorithm(draw_info)
+                if not sorting_in_progress:
+                    sorting_in_progress = True
+                    sorting_algorithm(draw_info)
+                    sorting_in_progress = False
+                    draw(draw_info, sorting_algo_name)
             elif event.key == pygame.K_i:
                 sorting_algorithm = insertion_sort
                 sorting_algo_name = "Insertion Sort"
+                draw(draw_info, sorting_algo_name)
             elif event.key == pygame.K_h:
                 sorting_algorithm = heap_sort
                 sorting_algo_name = "Heap Sort"
+                draw(draw_info, sorting_algo_name)
             elif event.key == pygame.K_q:
                 sorting_algorithm = quick_sort
                 sorting_algo_name = "Quick Sort"
+                draw(draw_info, sorting_algo_name)
             elif event.key == pygame.K_d:
                 sorting_algorithm = intro_sort
                 sorting_algo_name = "Intro Sort"
+                draw(draw_info, sorting_algo_name)
     pygame.quit()
     print(lst)
 
